@@ -162,10 +162,11 @@ def prune_false_positives(image,windows):
 
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
-    plt.imshow(heatmap, cmap='hot')
-    plt.savefig("output_images/test1_hot.png")
 
-    print ("Number of labeled objects",labels[1])
+    # plt.imshow(heatmap, cmap='hot')
+    # plt.savefig("output_images/test1_hot.png")
+
+    #print ("Number of labeled objects",labels[1])
     boxes=boxify_labels(labels)
     return boxes
 #    draw_img = draw_labeled_bboxes(np.copy(image), labels)
