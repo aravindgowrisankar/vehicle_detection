@@ -205,21 +205,21 @@ t=time.time()
 
 
 def process_image(image):
-    image=image[...,::-1]#flip BGR to RGB
+    """ Assume RGB image. """
     draw_image = np.copy(image)
 
     # Uncomment the following line if you extracted training
     # data from .png images (scaled 0 to 1 by mpimg) and the
     # image you are searching is a .jpg (scaled 0 to 255)
     #image = image.astype(np.float32)/255
-    sliding_window_sizes=((96,96),(64,64))
+    sliding_window_sizes=((96,96),)#,(64,64))
     all_windows=[]
     for scale_num,sliding_window_size in enumerate(sliding_window_sizes):
         windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
                            xy_window=sliding_window_size, xy_overlap=(0.5, 0.5))
 
 
-        print ("Number windows",len(windows))
+        #print ("Number windows",len(windows))
         all_img = draw_boxes(draw_image, windows, color=(0, 0, 255), thick=6)
 
         hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
@@ -229,21 +229,41 @@ def process_image(image):
                                      hog_channel=hog_channel, spatial_feat=spatial_feat, 
                                      hist_feat=hist_feat, hog_feat=hog_feat)                       
     
-        print ("Number hot windows",len(hot_windows))
+        #print ("Number hot windows",len(hot_windows))
 
         window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)
 
-        plt.imshow(window_img)
-        plt.savefig("output_images/test1_hot_windows_"+str(scale_num)+".png")
+        # plt.imshow(window_img)
+        # plt.savefig("output_images/test1_hot_windows_"+str(scale_num)+".png")
 
         boxes=prune_false_positives(draw_image,hot_windows)
 
         all_windows=merge_overlapping_windows(boxes+all_windows)
         pruned_img=draw_boxes(draw_image,all_windows)
-        #pruned_img=draw_boxes(draw_image,boxes)
-        plt.imshow(pruned_img)
-        plt.savefig("output_images/test1_pruned_windows_"+str(scale_num)+".png")
+        # plt.imshow(pruned_img)
+        # plt.savefig("output_images/test1_pruned_windows_"+str(scale_num)+".png")
+    return pruned_img
 
 
-image=cv2.imread("test_images/test3.jpg")
-process_image(image)
+# Test on Single Images
+
+image=cv2.imread("test_images/test1.jpg")[...,::-1]#flip BGR to RGB
+t=time.time()
+pruned_img=process_image(image)
+t2 = time.time()
+print(round(t2-t, 2), 'Seconds to process one image ...')
+
+plt.imshow(pruned_img)
+plt.savefig("output_images/test1_pruned_windows_final.png")
+
+# Test on Video
+
+from moviepy.editor import VideoFileClip
+from IPython.display import HTML
+white_output = 'test_video_output.mp4'
+clip1 = VideoFileClip("test_video.mp4")
+t=time.time()
+white_clip = clip1.fl_image(process_image)
+white_clip.write_videofile(white_output, audio=False)
+t2 = time.time()
+print(round(t2-t, 2), 'Seconds to process test video ...')
