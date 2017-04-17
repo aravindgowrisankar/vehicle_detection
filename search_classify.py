@@ -103,10 +103,15 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
 
     #1) Create an empty list to receive positive detection windows
     on_windows = []
+    target_shape= (64, 64)
+
     #2) Iterate over all windows in the list
     for window in windows:
+        new_img=img[window[0][1]:window[1][1], window[0][0]:window[1][0]]
+        
         #3) Extract the test window from original image
-        test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))      
+        test_img = cv2.resize(new_img,target_shape)#To be fixed: This breakdown when window size is larger than target_shape
+
         #4) Extract features for that window using single_img_features()
         features = single_img_features(test_img, color_space=color_space, 
                             spatial_size=spatial_size, hist_bins=hist_bins, 
@@ -199,35 +204,46 @@ print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 t=time.time()
 
 
-image=cv2.imread("test_images/test1.jpg")[...,::-1]#flip BGR to RGB
+def process_image(image):
+    image=image[...,::-1]#flip BGR to RGB
+    draw_image = np.copy(image)
 
-draw_image = np.copy(image)
-
-# Uncomment the following line if you extracted training
-# data from .png images (scaled 0 to 1 by mpimg) and the
-# image you are searching is a .jpg (scaled 0 to 255)
-#image = image.astype(np.float32)/255
-
-windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
-                    xy_window=(96, 96), xy_overlap=(0.5, 0.5))
-
-print ("Number windows",len(windows))
-all_img = draw_boxes(draw_image, windows, color=(0, 0, 255), thick=6)
-plt.imshow(all_img)
-plt.savefig("output_images/test1_all_windows.png")
-
-hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
-                        spatial_size=spatial_size, hist_bins=hist_bins, 
-                        orient=orient, pix_per_cell=pix_per_cell, 
-                        cell_per_block=cell_per_block, 
-                        hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                        hist_feat=hist_feat, hog_feat=hog_feat)                       
-
-print ("Number hot windows",len(hot_windows))
-
-window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)
-
-plt.imshow(window_img)
+    # Uncomment the following line if you extracted training
+    # data from .png images (scaled 0 to 1 by mpimg) and the
+    # image you are searching is a .jpg (scaled 0 to 255)
+    #image = image.astype(np.float32)/255
+    sliding_window_sizes=((96,96),(64,64))
+    all_windows=[]
+    for scale_num,sliding_window_size in enumerate(sliding_window_sizes):
+        windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
+                           xy_window=sliding_window_size, xy_overlap=(0.5, 0.5))
 
 
-plt.savefig("output_images/test1_hot_windows.png")
+        print ("Number windows",len(windows))
+        all_img = draw_boxes(draw_image, windows, color=(0, 0, 255), thick=6)
+
+        hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
+                                     spatial_size=spatial_size, hist_bins=hist_bins, 
+                                     orient=orient, pix_per_cell=pix_per_cell, 
+                                     cell_per_block=cell_per_block, 
+                                     hog_channel=hog_channel, spatial_feat=spatial_feat, 
+                                     hist_feat=hist_feat, hog_feat=hog_feat)                       
+    
+        print ("Number hot windows",len(hot_windows))
+
+        window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)
+
+        plt.imshow(window_img)
+        plt.savefig("output_images/test1_hot_windows_"+str(scale_num)+".png")
+
+        boxes=prune_false_positives(draw_image,hot_windows)
+
+        all_windows=merge_overlapping_windows(boxes+all_windows)
+        pruned_img=draw_boxes(draw_image,all_windows)
+        #pruned_img=draw_boxes(draw_image,boxes)
+        plt.imshow(pruned_img)
+        plt.savefig("output_images/test1_pruned_windows_"+str(scale_num)+".png")
+
+
+image=cv2.imread("test_images/test3.jpg")
+process_image(image)
