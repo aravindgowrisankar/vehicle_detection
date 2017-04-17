@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from skimage.feature import hog
+from scipy.ndimage.measurements import label
 
 def convert_color(img, conv='RGB2YCrCb'):
     if conv == 'RGB2YCrCb':
@@ -101,3 +102,136 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
         cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
     # Return the image copy with boxes drawn
     return imcopy
+
+
+def add_heat(image, bbox_list):
+    heatmap = np.zeros_like(image[:,:,0]).astype(np.float)
+    # Iterate through list of bboxes
+    for box in bbox_list:
+        # Add += 1 for all pixels inside each bbox
+        # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+        heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+
+    # Return updated heatmap
+    return heatmap# Iterate through list of bboxes
+    
+def apply_threshold(heatmap, threshold):
+    # Zero out pixels below the threshold
+    heatmap[heatmap <= threshold] = 0
+    # Return thresholded map
+    return heatmap
+
+def boxify_labels(labels):
+    boxes=[]
+    for car_number in range(1, labels[1]+1):
+        # Find pixels with each car_number label value
+        nonzero = (labels[0] == car_number).nonzero()
+        # Identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        # Define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+        boxes.append(bbox)
+    return boxes
+        
+def draw_labeled_bboxes(img, labels):
+    # Iterate through all detected cars
+    for car_number in range(1, labels[1]+1):
+        # Find pixels with each car_number label value
+        nonzero = (labels[0] == car_number).nonzero()
+        # Identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        # Define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+        # Draw the box on the image
+        cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 6)
+    # Return the image
+    return img
+
+import matplotlib.pyplot as plt
+def prune_false_positives(image,windows):
+    # Add heat to each box in box list
+    heat=add_heat(image,windows)
+    
+    # Apply threshold to help remove false positives
+    heat = apply_threshold(heat,1)
+
+    # Visualize the heatmap when displaying    
+    heatmap = np.clip(heat, 0, 255)
+
+    # Find final boxes from heatmap using label function
+    labels = label(heatmap)
+    plt.imshow(heatmap, cmap='hot')
+    plt.savefig("output_images/test1_hot.png")
+
+    print ("Number of labeled objects",labels[1])
+    boxes=boxify_labels(labels)
+    return boxes
+#    draw_img = draw_labeled_bboxes(np.copy(image), labels)
+
+def _is_overlap(window_one,window_two):
+    """ Test if windows from two different scales overlap
+    For each window, first co-ordinate is top-left and second is bottom right.
+    """
+    left_window=window_one
+    right_window=window_two
+    if (window_one[0][0]>window_two[0][0]):
+        left_window=window_two
+        right_window=window_one
+    
+    if right_window[0][0]<=left_window[1][0]:
+        return True
+    else:
+        return False
+
+def _merge_window(window_one,window_two):
+    """ For each window, first co-ordinate is top-left and second is bottom right.
+    """
+    x1=min(window_one[0][0],window_two[0][0])
+    y1=min(window_one[0][1],window_two[0][1])
+    x2=max(window_one[1][0],window_two[1][0])
+    y2=max(window_one[1][1],window_two[1][1])
+    return ((x1,y1),(x2,y2))
+
+
+def merge_overlapping_windows(windows):
+    """ Merge overlapping windows of different scales. """
+    if len(windows)<=1:
+        return windows
+    sorted_windows=list(windows)
+    non_overlapped_windows=[]
+  
+    while len(sorted_windows)>1:
+        sorted_windows=sorted(sorted_windows)
+        current_window=sorted_windows.pop(0)
+        overlap_found=False
+        for i,candidate_window in enumerate(sorted_windows):
+            overlap_found=_is_overlap(current_window,candidate_window)
+            if overlap_found:
+                new_window=_merge_window(current_window,candidate_window)
+                # print ("Merging windows")
+                # print ("*********************")
+                # print (current_window)
+                # print (candidate_window)
+                # print ("*********************")
+                # print ("Formed new window")
+                # print(new_window)
+                # print ("*********************")                
+                sorted_windows.pop(i)
+                sorted_windows.append(new_window)
+                break
+        if not overlap_found:
+            non_overlapped_windows.append(current_window)
+
+    if len(sorted_windows)==1:
+        non_overlapped_windows.append(sorted_windows[0])
+    
+    return sorted(non_overlapped_windows)
+
+
+test_boxes= ( ((0,0),(1,1)),
+              ((5,5),(6,6)),
+              ((2,0),(3,1)),
+              ((2,0),(10,8)),
+          )
