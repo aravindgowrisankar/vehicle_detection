@@ -150,7 +150,7 @@ def draw_labeled_bboxes(img, labels):
     return img
 
 import matplotlib.pyplot as plt
-def prune_false_positives(image,windows):
+def prune_false_positives(image,windows,plot=False):
     # Add heat to each box in box list
     heat=add_heat(image,windows)
     
@@ -162,9 +162,9 @@ def prune_false_positives(image,windows):
 
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
-
-    # plt.imshow(heatmap, cmap='hot')
-    # plt.savefig("output_images/test1_hot.png")
+    if plot:
+        plt.imshow(heatmap, cmap='hot')
+        plt.savefig("output_images/test1_hot.png")
 
     #print ("Number of labeled objects",labels[1])
     boxes=boxify_labels(labels)
