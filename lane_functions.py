@@ -323,9 +323,9 @@ def find_lane(img,left_lane=LEFT_LANE,right_lane=RIGHT_LANE):
 from moviepy.editor import VideoFileClip
 from IPython.display import HTML
 
-clear_lines()
-white_output = 'test_video_lanes.mp4'
-clip1 = VideoFileClip("test_video.mp4")
-white_clip = clip1.fl_image(find_lane)
-white_clip.write_videofile(white_output, audio=False)
+# clear_lines()
+# white_output = 'test_video_lanes.mp4'
+# clip1 = VideoFileClip("test_video.mp4")
+# white_clip = clip1.fl_image(find_lane)
+# white_clip.write_videofile(white_output, audio=False)
 
