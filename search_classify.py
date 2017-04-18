@@ -111,13 +111,37 @@ def process_image(image,classifier,X_scaler,dist_pickle):
     return pruned_img
 
 
-def test_on_image(filename,folder="test_images",extension=".jpg"):
-# Test on Single Images
+def test_hog_feature(filename,folder="test_images"):
+    # Demo hog features
+    filepath=folder+"/"+filename
+    image=cv2.imread(filepath)[...,::-1]#flip BGR to RGB
+    t=time.time()
+
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    features, hog_image = get_hog_features(gray, 
+                                           orient, 
+                                           pix_per_cell, 
+                                           cell_per_block, 
+                                           vis=True, 
+                                           feature_vec=False)
+    fig = plt.figure()
+    plt.subplot(121)
+    plt.imshow(image, cmap='gray')
+    plt.title('Example Car Image')
+    plt.subplot(122)
+    plt.imshow(hog_image, cmap='gray')
+    plt.title('HOG Visualization')
+    plt.savefig("output_images/test1_hog_features.png")
+
+
+
+def test_on_image(filename,folder="test_images"):
+    # Test on Single Images
     classifier = pickle.load(open("car_detector_svc_v2.pkl", 'rb'))
     X_scaler = pickle.load(open("standard_scaler_v2.pkl", 'rb'))
     dist_pickle = pickle.load(open("camera.pkl", 'rb'))
 
-    filepath=folder+"/"+filename+extension
+    filepath=folder+"/"+filename
     image=cv2.imread(filepath)[...,::-1]#flip BGR to RGB
     t=time.time()
 
@@ -138,7 +162,7 @@ def test_on_image(filename,folder="test_images",extension=".jpg"):
 
     hog_img=draw_boxes(draw_image,hot_windows)
     plt.imshow(hog_img)
-    plt.savefig("output_images/test1_hog.png")
+    plt.savefig("output_images/test1_hog_subsampling.png")
     
     # Show Pruning output
     pruned_windows=prune_false_positives(draw_image,hot_windows,True)
@@ -166,9 +190,9 @@ def test_on_video(videofile):
     t2 = time.time()
     print(round(t2-t, 2), 'Seconds to process test video ...')
 
-
+#test_hog_feature("31.png")
 #train_model()
-#test_on_image("test1")
+#test_on_image("test1.jpg")
 test_on_video("project_video")
 
 
