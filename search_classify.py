@@ -8,6 +8,7 @@ from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from skimage.feature import hog
 from common_functions import *
+from lane_functions import *
 import pickle
 # NOTE: the next import is only valid for scikit-learn version <= 0.17
 # for scikit-learn >= 0.18 use:
@@ -169,6 +170,8 @@ def process_image(image,classifier,X_scaler):
         pruned_img=draw_boxes(draw_image,all_windows)
         # plt.imshow(pruned_img)
         # plt.savefig("output_images/test1_pruned_windows_"+str(scale_num)+".png")
+    lane_image=find_lane(draw_image)
+    pruned_img=draw_boxes(lane_image,all_windows)
     return pruned_img
 
 
@@ -201,6 +204,7 @@ def test_on_video(videofile):
     t2 = time.time()
     print(round(t2-t, 2), 'Seconds to process test video ...')
 
+clear_lines()
 #test_on_image(filename="test_images/test1.jpg")
 #test_on_video("test_video.mp4")
 test_on_video("project_video")
