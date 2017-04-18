@@ -139,20 +139,19 @@ Here's the result after applying pruning:
 ![Pruned Image](./output_images/test1_pruned_windows_final.png)
 ---
 
-###Discussion
+### Discussion/Challenges
 
-####1. Challenges
++ Cars which are at an angle to the front facing camera can be a problem. 
+As an example, at an intersection, car positions will wary from being adjacent to perpendicular to the front camera.
+Without proper examples, the algorithm may struggle to detect such cars. 
 
-1. Cars which are at an angle to the front facing camera can be a problem. 
-E.g. at an intersection, car positions will wary from being adjacent to perpendicular to the front camera.
-
-2. Video processing is still too slow
++ Video processing is still too slow. 
 Hog sub sampling helped speed up by a factor of 3-5X.
 
-3. Jitter between frames
++ Jitter between frames
 Smoothing and averaging car positions between frames can help.
 
-4. Not detecting cars that are far away
++ Not detecting cars that are far away. 
 This is because I've hard-coded the ystart and ystop to search from 400-720 range.
 Increasing this will come at the cost of speed, so I did not do that.
 Perhaps the averaging of past frames can give us a good indication of where a car will be in the next frame; 
