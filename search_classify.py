@@ -85,11 +85,8 @@ def train_model():
     print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
     # Check the prediction time for a single sample
     t=time.time()
-    filename = 'car_detector_svc_v2.pkl'
-    pickle.dump(svc, open(filename, 'wb'))
-
-    filename = 'standard_scaler_v2.pkl'
-    pickle.dump(X_scaler, open(filename, 'wb'))
+    pickle.dump(svc, open('car_detector_svc_v2.pkl', 'wb'))
+    pickle.dump(X_scaler, open('standard_scaler_v2.pkl', 'wb'))
 
     return svc
 
@@ -114,20 +111,43 @@ def process_image(image,classifier,X_scaler,dist_pickle):
     return pruned_img
 
 
-def test_on_image(filename):
+def test_on_image(filename,folder="test_images",extension=".jpg"):
 # Test on Single Images
     classifier = pickle.load(open("car_detector_svc_v2.pkl", 'rb'))
     X_scaler = pickle.load(open("standard_scaler_v2.pkl", 'rb'))
     dist_pickle = pickle.load(open("camera.pkl", 'rb'))
-    image=cv2.imread(filename)[...,::-1]#flip BGR to RGB
+
+    filepath=folder+"/"+filename+extension
+    image=cv2.imread(filepath)[...,::-1]#flip BGR to RGB
     t=time.time()
-    pruned_img=process_image(image,classifier,X_scaler,dist_pickle)
-    t2 = time.time()
-    print(round(t2-t, 2), 'Seconds to process one image ...')
+
+    draw_image = np.copy(image)
+
+    # Show Hog subsampling output
+    hot_windows=find_cars(draw_image,
+                          ystart=y_start_stop[0],
+                          ystop=y_start_stop[1],
+                          scale=1.5,
+                          svc=classifier,
+                          X_scaler=X_scaler,
+                          orient=orient,
+                          pix_per_cell=pix_per_cell,
+                          cell_per_block=cell_per_block,
+                          spatial_size=spatial_size,
+                          hist_bins=hist_bins)
+
+    hog_img=draw_boxes(draw_image,hot_windows)
+    plt.imshow(hog_img)
+    plt.savefig("output_images/test1_hog.png")
     
+    # Show Pruning output
+    pruned_windows=prune_false_positives(draw_image,hot_windows,True)
+    pruned_img=draw_boxes(draw_image,pruned_windows)
     plt.imshow(pruned_img)
     plt.savefig("output_images/test1_pruned_windows_final.png")
 
+    t2 = time.time()
+    print(round(t2-t, 2), 'Seconds to process one image ...')
 # Test on Video
 
 def test_on_video(videofile):
@@ -148,8 +168,7 @@ def test_on_video(videofile):
 
 
 #train_model()
-#test_on_image(filename="test_images/test1.jpg")
+#test_on_image("test1")
 test_on_video("project_video")
-#test_on_video("project_video")
 
 
