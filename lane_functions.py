@@ -267,8 +267,7 @@ def draw_lane_area(warped,undist,left_fitx,right_fitx,Minv,height):
 def sanity_check(fit,x,y,fit_x,curvature):
     return True
 
-def find_lane(img,left_lane=LEFT_LANE,right_lane=RIGHT_LANE):
-    dist_pickle = pickle.load(open("camera.pkl", 'rb'))
+def find_lane(img,dist_pickle,left_lane=LEFT_LANE,right_lane=RIGHT_LANE):
     dist=dist_pickle["dist"]
     mtx=dist_pickle["mtx"]
     M=dist_pickle["M"]
